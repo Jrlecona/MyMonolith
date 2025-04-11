@@ -1,42 +1,86 @@
+using Microsoft.EntityFrameworkCore;
+using MyMonolith.Data;
+using MyMonolith.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// Add Services
+builder.Services.AddControllers();
+builder.Services.AddDbContext<StoreContext>(options => options.UseInMemoryDatabase("StoreDB")); // database in memory
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Config middleware
+app.UseRouting();
+app.UseAuthorization();
+app.MapControllers();
+
+//Initial data
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    var context = scope.ServiceProvider.GetRequiredService<StoreContext>();
+
+    //add products
+    if (!context.Products.Any())
+    {
+        context.Products.AddRange(
+            new Product
+            {
+                Name = "Laptop",
+                Price = 999.99m,
+                Stock = 10
+            },
+            new Product
+            {
+                Name = "Mouse",
+                Price = 19.99m,
+                Stock = 50
+            }
+        );
+
+        //add users
+        context.Users.AddRange(
+            new User
+            {
+                UserName = "jorge_fragoso",
+                Email = "jfragoso@example.com",
+                CreatedAt = DateTime.UtcNow
+            },
+            new User
+            {
+                UserName = "valente_mora",
+                Email = "vmora@example.com",
+                CreatedAt = DateTime.UtcNow
+            }
+        );
+
+        context.SaveChanges();
+
+        //add order
+        var user = context.Users.First();
+        var product = context.Products.First();
+
+        context.Orders.Add(
+            new Order
+            {
+                UserId = user.Id,
+                OrderDate = DateTime.UtcNow,
+                Items = new List<OrderItem>
+                {
+                    new OrderItem
+                    {
+                        ProductId = 1,
+                        Quantity = 1,
+                        UnitPrice = 999.99m,
+                        Product = product
+                    }
+                },
+                Total = 999.99m
+            }
+        );
+
+        context.SaveChanges();
+    }
 }
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

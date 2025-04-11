@@ -20,7 +20,7 @@ public class UserController : Controller
     [HttpGet]
     public IActionResult GetUsers()
     {
-        var users = _context.User.ToList();
+        var users = _context.Users.ToList();
         return Ok(users);
     }
 
@@ -28,7 +28,7 @@ public class UserController : Controller
     public IActionResult AddUser([FromBody] User user)
     {
         user.CreatedAt = DateTime.UtcNow;
-        _context.User.Add(user);
+        _context.Users.Add(user);
         _context.SaveChanges();
         return CreatedAtAction(nameof(GetUsers), new { id = user.Id }, user);
     }
