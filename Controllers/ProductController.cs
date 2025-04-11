@@ -5,7 +5,7 @@ using MyMonolith.Models;
 namespace MyMonolith.Controllers;
 
 [ApiController]
-[Route("[api/products]")]
+[Route("api/products")]
 public class ProductController : Controller
 {
     private readonly StoreContext _context;
